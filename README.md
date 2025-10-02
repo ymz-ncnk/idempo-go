@@ -74,7 +74,7 @@ type RepositoryBundle struct {
   store idempotency.Store 
 }
 
-func (r RepositoryBundle) IdempotentStore() idempotency.Store { 
+func (r RepositoryBundle) IdempotencyStore() idempotency.Store { 
   return r.store 
 }
 

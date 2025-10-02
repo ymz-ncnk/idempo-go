@@ -3,7 +3,7 @@ package idempotency
 // UOWRepos is the constraint interface required by the generic UnitOfWork.
 // Any type T passed to UnitOfWork must implement this method.
 type UOWRepos interface {
-	IdempotentStore() Store
+	IdempotencyStore() Store
 }
 
 // UnitOfWork defines a single unit of work for an application transaction.

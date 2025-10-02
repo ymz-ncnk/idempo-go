@@ -14,16 +14,16 @@ const MemDBIdempotencyTableName = "idempotency_records"
 
 // NewIdempotencyStore returns a new MemDB idempotency store.
 func NewIdempotencyStore(tx *memdb.Txn) idempotency.Store {
-	return &IdempotentStore{tx}
+	return &IdempotencyStore{tx}
 }
 
-// IdempotentStore implements the app.IdempotencyStore interface.
-type IdempotentStore struct {
+// IdempotencyStore implements the app.IdempotencyStore interface.
+type IdempotencyStore struct {
 	tx *memdb.Txn
 }
 
 // Get retrieves an IdempotencyRecord by key.
-func (s *IdempotentStore) Get(ctx context.Context, id string) (
+func (s *IdempotencyStore) Get(ctx context.Context, id string) (
 	record idempotency.Record, err error,
 ) {
 	raw, err := s.tx.First(MemDBIdempotencyTableName, "id", id)
@@ -44,7 +44,7 @@ func (s *IdempotentStore) Get(ctx context.Context, id string) (
 }
 
 // Save creates a new record.
-func (s *IdempotentStore) Save(ctx context.Context,
+func (s *IdempotencyStore) Save(ctx context.Context,
 	record idempotency.Record,
 ) (err error) {
 	if err := s.tx.Insert(MemDBIdempotencyTableName, record); err != nil {

@@ -68,7 +68,7 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 		// Idempotency Check
 		var ok bool
 		ok, successOutput, fnErr = w.manager.AlreadyProcessed(ctx, idempotencyKey,
-			hash, repos.IdempotentStore())
+			hash, repos.IdempotencyStore())
 		if ok || fnErr != nil {
 			return
 		}
@@ -81,7 +81,7 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 				// Business logic failure (e.g., OCC failed, Stock unavailable). Save
 				// the fail record.
 				if storeErr := w.manager.SaveFailOutput(ctx, idempotencyKey, hash,
-					failOutput, repos.IdempotentStore()); storeErr != nil {
+					failOutput, repos.IdempotencyStore()); storeErr != nil {
 					fnErr = NewFailureOutputStoreError(storeErr, fnErr)
 				} else {
 					err = fnErr
@@ -92,7 +92,7 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 		}
 		// Action SUCCEEDED. Save the success record.
 		if storeErr := w.manager.SaveSuccessOutput(ctx, idempotencyKey, hash,
-			successOutput, repos.IdempotentStore()); storeErr != nil {
+			successOutput, repos.IdempotencyStore()); storeErr != nil {
 			fnErr = NewSuccessOutputStoreError(storeErr)
 		}
 		return
