@@ -104,7 +104,7 @@ var (
     serializer.JSONSerializer[TransferResult]{},
     serializer.JSONSerializer[TransferFailure]{}, 
     // Converts a stored failure output back into an error.
-    func(f TransferFailure) error { return errors.New(f.Reason) }, 
+    func(f TransferFailure) error { return ErrInsufficientFunds }, 
   )
 )
 wrapper := idempotency.NewWrapper(unitOfWork, manager, 
@@ -123,18 +123,19 @@ wrapper := idempotency.NewWrapper(unitOfWork, manager,
 And finally, wrap the Action:
 
 ```go
+transferAction := func(ctx context.Context, repos RepositoryBundle, 
+  input TransferInput) (TransferResult, error) { 
+  ...
+}
 var (
   idempotencyKey = "transfer-123"
-  transferAction = func(ctx context.Context, repos RepositoryBundle, 
-    input TransferInput) (TransferResult, error) { 
-    ...
+  input = TransferInput{ 
+    FromAccount: "A", 
+    ToAccount: "B", 
+    Amount: 100, 
   }
 )
-result, err := wrapper.Wrap(ctx, idempotencyKey, TransferInput{ 
-  FromAccount: "A", 
-  ToAccount: "B", 
-  Amount: 100, 
-}, transferAction)
+result, err := wrapper.Wrap(ctx, idempotencyKey, input, transferAction)
 ```
 
 - The first call runs the transfer and stores the result.
