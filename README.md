@@ -52,7 +52,7 @@ rolled back.
 ## Example
 
 Let’s say we want to build a money transfer API that should not execute the
-same transfer twice. With `idempotency-go``, we wrap our business logic in an
+same transfer twice. With `idempotency-go`, we wrap our business logic in an
 `Action` and let the library handle idempotency for us.
 
 ```go
