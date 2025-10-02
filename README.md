@@ -22,7 +22,8 @@ and is **not ready for production use**.
 
 ## Action, Input, and Outputs
 
-At the heart of `idempotency-go` is the `Action` — your business logic function.
+At the heart of `idempotency-go` is the [Action](https://github.com/ymz-ncnk/idempotency-go/blob/main/action.go)
+— your business logic function.
 
 ```go
 type Action[T, I, S any] func(ctx context.Context, repos T, input I) (S, error)
@@ -143,4 +144,4 @@ result, err := wrapper.Wrap(ctx, idempotencyKey, TransferInput{
   mismatch error.
 
 A complete, working example illustrating the full component setup can be found
-in the [integration_test package](https://github.com/ymz-ncnk/idempotency-go/integration_test).
+in the [integration_test package](https://github.com/ymz-ncnk/idempotency-go/tree/main/integration_test).
