@@ -12,4 +12,5 @@ import "context"
 // The Action's failure errors must be mappable by the Wrapper to a failure
 // output so they can be persisted and replayed to the caller on subsequent
 // attempts.
-type Action[T, I, S any] func(ctx context.Context, repos T, input I) (S, error)
+type Action[T, I, S any] func(ctx context.Context, repos T,
+	idempotencyKey string, input I) (S, error)

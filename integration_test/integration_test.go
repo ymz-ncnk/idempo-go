@@ -119,7 +119,7 @@ func makeService(db *memdb.MemDB) app.TransferService {
 			bundle.AccountRepo = infra.NewAccountRepository(tx)
 			return bundle
 		}
-		unitOfWork = uow.NewMemDBUnitOfWork(db, factory)
+		unitOfWork = uow.NewUnitOfWork(db, factory)
 	)
 	return app.NewTransferService(unitOfWork)
 }
@@ -140,7 +140,7 @@ func fillDB(db *memdb.MemDB) {
 func getAccount(db *memdb.MemDB, id string) domain.Account {
 	tx := db.Txn(false)
 	defer tx.Abort()
-	acc, err := tx.First(infra.MemDBAccountsTableName, "id", id)
+	acc, err := tx.First(infra.AccountsTableName, "id", id)
 	if err != nil {
 		panic(err)
 	}

@@ -15,7 +15,7 @@ type ErrorToFail[F any] func(err error) (F, bool)
 // for transactional data access, the Manager for handling persistence details,
 // and the error mapping function to correctly categorize execution failures.
 func NewWrapper[T UOWRepos, I Hasher, S, F any](uow UnitOfWork[T],
-	manager Manager[S, F],
+	manager StoreAdapter[S, F],
 	errorToFail ErrorToFail[F],
 ) Wrapper[T, I, S, F] {
 	return Wrapper[T, I, S, F]{
@@ -38,7 +38,7 @@ func NewWrapper[T UOWRepos, I Hasher, S, F any](uow UnitOfWork[T],
 // F is the type of the failure output.
 type Wrapper[T UOWRepos, I Hasher, S, F any] struct {
 	uow         UnitOfWork[T]
-	manager     Manager[S, F]
+	manager     StoreAdapter[S, F]
 	errorToFail ErrorToFail[F]
 }
 
@@ -73,7 +73,7 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 			return
 		}
 		// Execute Action
-		successOutput, fnErr = action(ctx, repos, input)
+		successOutput, fnErr = action(ctx, repos, idempotencyKey, input)
 		if fnErr != nil {
 			// Handle Failure: Business or System Error
 			failOutput, isBusinessError := w.errorToFail(fnErr)

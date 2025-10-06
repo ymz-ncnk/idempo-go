@@ -33,9 +33,9 @@ type Action[T, I, S any] func(ctx context.Context, repos T, input I) (S, error)
   `UnitOfWork`. This is where your Action reads and writes data (e.g., database
   tables, domain repositories). One of these repositories must always be the
   idempotency store.
-- Input (I): The parameters passed to your `Action`, which can be represented
-  by a DTO (Data Transfer Object). The input type must implement the `Hasher`
-  interface so it can be uniquely identified and checked for consistency.
+- Input (I): The parameters passed to your `Action` (like service DTO). The
+  input type must implement the `Hasher` interface so it can be uniquely
+  identified and checked for consistency.
 - Success Output (S): The normal result your `Action` produces when everything
   goes well.
 - Failure Output: A structured form of a business failure (e.g., “insufficient

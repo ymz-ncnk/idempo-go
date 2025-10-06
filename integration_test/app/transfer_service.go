@@ -39,6 +39,7 @@ func (s TransferService) Transfer(ctx context.Context, idempotencyKey string,
 // doTransfer executes a money transfer.
 func (s TransferService) doTransfer(ctx context.Context,
 	repos RepositoryBundle,
+	idempotencyKey string,
 	input dto.TransferInput,
 ) (result dto.TransferResult, err error) {
 	from, err := repos.AccountRepo.Get(input.FromAccount)
@@ -91,7 +92,7 @@ func makeTransferWrapper(
 			// stored (ok=false),
 			return
 		}
-		manager = idempotency.NewManager(
+		manager = idempotency.NewStoreAdapter(
 			serializer.JSONSerializer[dto.TransferResult]{},
 			serializer.JSONSerializer[dto.TransferFailure]{},
 			failToError,

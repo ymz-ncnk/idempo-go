@@ -19,12 +19,12 @@ type AccountRepository struct {
 
 // Add inserts a new Account into the in-memory DB.
 func (r AccountRepository) Add(account domain.Account) (err error) {
-	return r.tx.Insert(MemDBAccountsTableName, account)
+	return r.tx.Insert(AccountsTableName, account)
 }
 
 // Get retrieves an Account by its ID from the in-memory DB.
 func (r AccountRepository) Get(id string) (account domain.Account, err error) {
-	acc, err := r.tx.First(MemDBAccountsTableName, "id", id)
+	acc, err := r.tx.First(AccountsTableName, "id", id)
 	if err != nil {
 		return
 	}
@@ -34,5 +34,5 @@ func (r AccountRepository) Get(id string) (account domain.Account, err error) {
 
 // Update inserts or overwrites an existing Account in the in-memory DB.
 func (r AccountRepository) Update(account domain.Account) (err error) {
-	return r.tx.Insert(MemDBAccountsTableName, account)
+	return r.tx.Insert(AccountsTableName, account)
 }
