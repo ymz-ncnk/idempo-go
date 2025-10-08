@@ -100,8 +100,10 @@ var (
     // Other errors (like lost DB connection) will not be persisted.
     return TransferFailure{}, false 
   }
+
   // Converts a stored failure output back into an error.
   failToError =  func(f TransferFailure) error { return ErrInsufficientFunds }
+
   unitOfWork = uow.NewMemDBUnitOfWork(db, factory) // Only in memory
   // implementation available at the moment. The factory ensures a new
   // repository bundle is created for each transaction.
