@@ -82,9 +82,7 @@ func makeTransferWrapper(
 		}
 		// errorToFail determines which error should be saved as an idempotent
 		// failure output.
-		errorToFail idempotency.ErrorToFail[dto.TransferFailure] = func(err error) (
-			output dto.TransferFailure, ok bool,
-		) {
+		errorToFail = func(err error) (output dto.TransferFailure, ok bool) {
 			if errors.Is(err, domain.ErrInsufficientFunds) {
 				return dto.TransferFailure{Reason: err.Error()}, true
 			}

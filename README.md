@@ -91,6 +91,17 @@ Now we can set up the wrapper:
 
 ```go
 var (
+  // This function determines which Go errors should be persisted as a failure
+  // output (return 'true').
+  errorToFail = func(err error) (TransferFailure, bool) { 
+    if errors.Is(err, ErrInsufficientFunds) { 
+      return TransferFailure{Reason: err.Error()}, true 
+    }
+    // Other errors (like lost DB connection) will not be persisted.
+    return TransferFailure{}, false 
+  }
+  // Converts a stored failure output back into an error.
+  failToError =  func(f TransferFailure) error { return ErrInsufficientFunds }
   unitOfWork = uow.NewMemDBUnitOfWork(db, factory) // Only in memory
   // implementation available at the moment. The factory ensures a new
   // repository bundle is created for each transaction.
@@ -101,21 +112,10 @@ var (
   storeAdapter = idempotency.NewStoreAdapter(
     serializer.JSONSerializer[TransferResult]{},
     serializer.JSONSerializer[TransferFailure]{}, 
-    // Converts a stored failure output back into an error.
-    func(f TransferFailure) error { return ErrInsufficientFunds }, 
+    failToError,
   )
 )
-wrapper := idempotency.NewWrapper(unitOfWork, storeAdapter, 
-  // This function determines which Go errors should be persisted as a failure
-  // output (return 'true').
-  func(err error) (TransferFailure, bool) { 
-    if errors.Is(err, ErrInsufficientFunds) { 
-      return TransferFailure{Reason: err.Error()}, true 
-    }
-    // Other errors (like lost DB connection) will not be persisted.
-    return TransferFailure{}, false 
-  }, 
-)
+wrapper := idempotency.NewWrapper(unitOfWork, storeAdapter, errorToFail)
 ```
 
 And finally, wrap the Action:
