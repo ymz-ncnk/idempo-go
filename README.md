@@ -1,21 +1,19 @@
 # idempotency-go
 
-**idempotency-go** is a small Go library that helps you make idempotent operations
-easier to implement.
+**idempotency-go** is a small Go library that simplifies the implementation of
+idempotent operations.
 
-When building APIs or distributed systems, it’s common to face situations where
-the same request might be sent multiple times (due to retries, network issues,
-or client errors). Without protection, this can lead to duplicate side effects
+When building distributed systems, it’s common to face situations where the
+same request might be sent multiple times (due to retries, network issues, or
+client errors). Without protection, this can lead to duplicate side effects
 like double charges, duplicated records, or inconsistent states.
 
-This library provides a Wrapper around your business logic that ensures:
+This library provides a **wrapper** around an application operation that
+ensures:
 
 - The same request (with the same input) always produces the same result.
-- Duplicate executions return the stored result instead of running the logic
-  again.
-
-In short: you write your business logic once, and `idempotency-go` makes sure
-it runs safely, exactly once.
+- Duplicate executions return the stored result instead of running the
+  operation again.
 
 ⚠️ **Prototype Warning:** This project is currently in the **prototype state**
 and is **not ready for production use**.
@@ -23,7 +21,7 @@ and is **not ready for production use**.
 ## Action, Input, and Outputs
 
 At the heart of `idempotency-go` is the [Action](https://github.com/ymz-ncnk/idempotency-go/blob/main/action.go)
-— your business logic function.
+— your application logic function.
 
 ```go
 type Action[T, I, S any] func(ctx context.Context, repos T, input I) (S, error)
@@ -53,7 +51,7 @@ rolled back.
 ## Example
 
 Let’s say we want to build a money transfer API that should not execute the
-same transfer twice. With `idempotency-go`, we wrap our business logic in an
+same transfer twice. With `idempotency-go`, we wrap our application logic in an
 `Action` and let the library handle idempotency for us.
 
 ```go
