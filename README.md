@@ -95,17 +95,17 @@ var (
   // implementation available at the moment. The factory ensures a new
   // repository bundle is created for each transaction.
 
-  // The Manager is responsible for storing and retrieving both success and
+  // StoreAdapter is responsible for storing and retrieving both success and
   // failure outputs. It uses serializers to persist them, and a converter to
   // turn stored failures back into errors.
-  manager = idempotency.NewManager( 
+  storeAdapter = idempotency.NewStoreAdapter(
     serializer.JSONSerializer[TransferResult]{},
     serializer.JSONSerializer[TransferFailure]{}, 
     // Converts a stored failure output back into an error.
     func(f TransferFailure) error { return ErrInsufficientFunds }, 
   )
 )
-wrapper := idempotency.NewWrapper(unitOfWork, manager, 
+wrapper := idempotency.NewWrapper(unitOfWork, storeAdapter, 
   // This function determines which Go errors should be persisted as a failure
   // output (return 'true').
   func(err error) (TransferFailure, bool) { 

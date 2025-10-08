@@ -21,23 +21,23 @@ var (
 
 // NewSuccessOutputMarshalError wraps a low-level marshalling error.
 //
-// This error is returned by the Manager when it fails to marshal the success
-// output.
+// This error is returned by the StoreAdapter when it fails to marshal the
+// success output.
 func NewSuccessOutputMarshalError(marshalErr error) error {
 	return fmt.Errorf(ErrorPrefix+"success output marshal error: %w", marshalErr)
 }
 
 // NewFailureOutputMarshalError wraps a low-level marshalling error.
 //
-// This error is returned by the Manager when it fails to marshal the failure
-// output.
+// This error is returned by the StoreAdapter when it fails to marshal the
+// failure output.
 func NewFailureOutputMarshalError(marshalErr error) error {
 	return fmt.Errorf(ErrorPrefix+"fail output marshal error: %w", marshalErr)
 }
 
 // NewSuccessOutputUnmarshalError wraps a low-level unmarshalling error.
 //
-// This error is returned by the Manager when it fails to unmarshal
+// This error is returned by the StoreAdapter when it fails to unmarshal
 // the persisted success output.
 func NewSuccessOutputUnmarshalError(unmarshalErr error) error {
 	return fmt.Errorf(ErrorPrefix+"success output unmarshal error: %w", unmarshalErr)
@@ -45,7 +45,7 @@ func NewSuccessOutputUnmarshalError(unmarshalErr error) error {
 
 // NewFailureOutputUnmarshalError wraps a low-level unmarshalling error.
 //
-// This error is returned by the Manager when it fails to unmarshal
+// This error is returned by the StoreAdapter when it fails to unmarshal
 // the persisted failure output.
 func NewFailureOutputUnmarshalError(unmarshalErr error) error {
 	return fmt.Errorf(ErrorPrefix+"fail output unmarshal error: %w", unmarshalErr)

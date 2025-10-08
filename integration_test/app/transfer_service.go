@@ -71,7 +71,7 @@ func (s TransferService) doTransfer(ctx context.Context,
 // makeTransferWrapper creates an idempotency.Wrapper specifically configured
 // for the fund transfer business logic.
 func makeTransferWrapper(
-	uow UnitOfWork,
+	unitOfWork UnitOfWork,
 ) idempotency.Wrapper[RepositoryBundle, dto.TransferInput, dto.TransferResult, dto.TransferFailure] {
 	var (
 		// failToError converts the stored failure output (TransferFailure) back
@@ -92,12 +92,12 @@ func makeTransferWrapper(
 			// stored (ok=false),
 			return
 		}
-		manager = idempotency.NewStoreAdapter(
+		storeAdapter = idempotency.NewStoreAdapter(
 			serializer.JSONSerializer[dto.TransferResult]{},
 			serializer.JSONSerializer[dto.TransferFailure]{},
 			failToError,
 		)
 	)
 	return idempotency.NewWrapper[RepositoryBundle, dto.TransferInput](
-		uow, manager, errorToFail)
+		unitOfWork, storeAdapter, errorToFail)
 }

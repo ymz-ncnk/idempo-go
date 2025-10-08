@@ -12,17 +12,14 @@ type ErrorToFail[F any] func(err error) (F, bool)
 // NewWrapper creates a new instance of the execution Wrapper.
 //
 // It configures the Wrapper with the necessary components: the UnitOfWork
-// for transactional data access, the Manager for handling persistence details,
-// and the error mapping function to correctly categorize execution failures.
-func NewWrapper[T UOWRepos, I Hasher, S, F any](uow UnitOfWork[T],
-	manager StoreAdapter[S, F],
+// for transactional data access, the StoreAdapter for handling persistence
+// details, and the error mapping function to correctly categorize execution
+// failures.
+func NewWrapper[T UOWRepos, I Hasher, S, F any](unitOfWork UnitOfWork[T],
+	storeAdapter StoreAdapter[S, F],
 	errorToFail ErrorToFail[F],
 ) Wrapper[T, I, S, F] {
-	return Wrapper[T, I, S, F]{
-		uow:         uow,
-		manager:     manager,
-		errorToFail: errorToFail,
-	}
+	return Wrapper[T, I, S, F]{unitOfWork, storeAdapter, errorToFail}
 }
 
 // Wrapper is the core type that enforces idempotency for a protected Action.
@@ -37,9 +34,9 @@ func NewWrapper[T UOWRepos, I Hasher, S, F any](uow UnitOfWork[T],
 // S is the type of the successful output.
 // F is the type of the failure output.
 type Wrapper[T UOWRepos, I Hasher, S, F any] struct {
-	uow         UnitOfWork[T]
-	manager     StoreAdapter[S, F]
-	errorToFail ErrorToFail[F]
+	unitOfWork   UnitOfWork[T]
+	storeAdapter StoreAdapter[S, F]
+	errorToFail  ErrorToFail[F]
 }
 
 // Wrap executes the provided Action idempotently.
@@ -64,10 +61,10 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 		err = fmt.Errorf("idempotency wrapper failed to calculate input hash: %w", err)
 		return
 	}
-	execErr := w.uow.Execute(func(repos T) (fnErr error) {
+	execErr := w.unitOfWork.Execute(func(repos T) (fnErr error) {
 		// Idempotency Check
 		var ok bool
-		ok, successOutput, fnErr = w.manager.AlreadyProcessed(ctx, idempotencyKey,
+		ok, successOutput, fnErr = w.storeAdapter.AlreadyProcessed(ctx, idempotencyKey,
 			hash, repos.IdempotencyStore())
 		if ok || fnErr != nil {
 			return
@@ -80,7 +77,7 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 			if isBusinessError {
 				// Business logic failure (e.g., OCC failed, Stock unavailable). Save
 				// the fail record.
-				if storeErr := w.manager.SaveFailOutput(ctx, idempotencyKey, hash,
+				if storeErr := w.storeAdapter.SaveFailOutput(ctx, idempotencyKey, hash,
 					failOutput, repos.IdempotencyStore()); storeErr != nil {
 					fnErr = NewFailureOutputStoreError(storeErr, fnErr)
 				} else {
@@ -91,7 +88,7 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 			return
 		}
 		// Action SUCCEEDED. Save the success record.
-		if storeErr := w.manager.SaveSuccessOutput(ctx, idempotencyKey, hash,
+		if storeErr := w.storeAdapter.SaveSuccessOutput(ctx, idempotencyKey, hash,
 			successOutput, repos.IdempotencyStore()); storeErr != nil {
 			fnErr = NewSuccessOutputStoreError(storeErr)
 		}

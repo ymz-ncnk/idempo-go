@@ -6,11 +6,12 @@ import (
 
 // FailToError defines the function that converts a stored failure output ('F')
 // back into a Go 'error' object.
-// Used by the Manager during AlreadyProcessed to recreate the original error.
+// Used by the StoreAdapter during AlreadyProcessed to recreate the original
+// error.
 type FailToError[F any] func(faildOutput F) error
 
-// NewStoreAdapter creates a new instance of the Manager, initializing it with
-// the necessary serializers and the function required to reconstruct a
+// NewStoreAdapter creates a new instance of the StoreAdapter, initializing it
+// with the necessary serializers and the function required to reconstruct a
 // stored failure object back into an active Go error.
 func NewStoreAdapter[S, F any](successSer Serializer[S], failSer Serializer[F],
 	failToError FailToError[F],
