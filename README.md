@@ -3,6 +3,8 @@
 A Go library for **atomic, transactional idempotency** — ensuring safe retries in
 distributed systems.
 
+> Learn the concept behind this library:  
+> [**Atomic Idempotency: Why Idempotency Keys Aren’t Enough for Safe Retries**](https://ymz-ncnk.medium.com/atomic-idempotency-why-idempotency-keys-arent-enough-for-safe-retries-8144d03863c6)
 When building distributed systems, it’s common to encounter situations where
 the same request is executed multiple times due to retries, network issues, or
 client errors. Without safeguards, this can cause duplicate side effects such
