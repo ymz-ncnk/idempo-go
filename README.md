@@ -1,19 +1,19 @@
 # idempotency-go
 
-**idempotency-go** is a small Go library that simplifies the implementation of
-idempotent operations.
+A Go library for **atomic, transactional idempotency** — ensuring safe retries in
+distributed systems.
 
-When building distributed systems, it’s common to face situations where the
-same request might be sent multiple times (due to retries, network issues, or
-client errors). Without protection, this can lead to duplicate side effects
-like double charges, duplicated records, or inconsistent states.
+When building distributed systems, it’s common to encounter situations where
+the same request is executed multiple times due to retries, network issues, or
+client errors. Without safeguards, this can cause duplicate side effects such
+as double charges, duplicated records, or inconsistent state.
 
-This library provides a **wrapper** around an application operation that
-ensures:
+`idempotency-go` provides a **wrapper** around application operations that
+guarantees:
 
-- The same request (with the same input) always produces the same result.
-- Duplicate executions return the stored result instead of running the
-  operation again.
+- Repeated requests with the same input always produce the same result.
+- Duplicate executions return the stored result instead of re-running the
+  operation.
 
 ⚠️ **Prototype Warning:** This project is currently in the **prototype state**
 and is **not ready for production use**.
