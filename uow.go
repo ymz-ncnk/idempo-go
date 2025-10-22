@@ -1,4 +1,4 @@
-package idempotency
+package idempo
 
 // UOWRepos is the constraint interface required by the generic UnitOfWork.
 // Any type T passed to UnitOfWork must implement this method.

@@ -1,4 +1,4 @@
-package idempotency
+package idempo
 
 // Record holds the Action output.
 type Record struct {

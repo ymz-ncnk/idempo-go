@@ -1,4 +1,4 @@
-module github.com/ymz-ncnk/idempotency-go
+module github.com/ymz-ncnk/idempo-go
 
 go 1.24.1
 

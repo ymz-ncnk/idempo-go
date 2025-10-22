@@ -5,10 +5,10 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/ymz-ncnk/idempotency-go"
-	"github.com/ymz-ncnk/idempotency-go/integration_test/domain"
-	"github.com/ymz-ncnk/idempotency-go/integration_test/dto"
-	serializer "github.com/ymz-ncnk/idempotency-go/serializer/json"
+	"github.com/ymz-ncnk/idempo-go"
+	"github.com/ymz-ncnk/idempo-go/integration_test/domain"
+	"github.com/ymz-ncnk/idempo-go/integration_test/dto"
+	serializer "github.com/ymz-ncnk/idempo-go/serializer/json"
 )
 
 // NewTransferService constructs a TransferService that executes
@@ -23,7 +23,7 @@ func NewTransferService(unitOfWork UnitOfWork) TransferService {
 // The wrapper ensures that repeated requests with the same idempotency key
 // return the same result without reapplying side effects.
 type TransferService struct {
-	wrapper idempotency.Wrapper[RepositoryBundle, dto.TransferInput,
+	wrapper idempo.Wrapper[RepositoryBundle, dto.TransferInput,
 		dto.TransferResult, dto.TransferFailure]
 }
 
@@ -68,11 +68,11 @@ func (s TransferService) doTransfer(ctx context.Context,
 	return
 }
 
-// makeTransferWrapper creates an idempotency.Wrapper specifically configured
+// makeTransferWrapper creates an idempo.Wrapper specifically configured
 // for the fund transfer business logic.
 func makeTransferWrapper(
 	unitOfWork UnitOfWork,
-) idempotency.Wrapper[RepositoryBundle, dto.TransferInput, dto.TransferResult, dto.TransferFailure] {
+) idempo.Wrapper[RepositoryBundle, dto.TransferInput, dto.TransferResult, dto.TransferFailure] {
 	var (
 		// failToError converts the stored failure output (TransferFailure) back
 		// into a Go error (ErrInsufficientFunds) for the client on subsequent
@@ -90,12 +90,12 @@ func makeTransferWrapper(
 			// stored (ok=false),
 			return
 		}
-		storeAdapter = idempotency.NewStoreAdapter(
+		storeAdapter = idempo.NewStoreAdapter(
 			serializer.JSONSerializer[dto.TransferResult]{},
 			serializer.JSONSerializer[dto.TransferFailure]{},
 			failToError,
 		)
 	)
-	return idempotency.NewWrapper[RepositoryBundle, dto.TransferInput](
+	return idempo.NewWrapper[RepositoryBundle, dto.TransferInput](
 		unitOfWork, storeAdapter, errorToFail)
 }

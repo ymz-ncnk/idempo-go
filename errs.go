@@ -1,4 +1,4 @@
-package idempotency
+package idempo
 
 import (
 	"errors"

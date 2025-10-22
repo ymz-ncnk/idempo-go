@@ -1,4 +1,4 @@
-package idempotency
+package idempo
 
 // Serializer defines the interface for converting a generic type T
 // (which can be a success output or a failure output) to and from a byte slice

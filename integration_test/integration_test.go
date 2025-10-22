@@ -7,11 +7,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-memdb"
 	assertfatal "github.com/ymz-ncnk/assert/fatal"
-	"github.com/ymz-ncnk/idempotency-go/integration_test/app"
-	"github.com/ymz-ncnk/idempotency-go/integration_test/domain"
-	"github.com/ymz-ncnk/idempotency-go/integration_test/dto"
-	infra "github.com/ymz-ncnk/idempotency-go/integration_test/infrastructure/memdb"
-	uow "github.com/ymz-ncnk/idempotency-go/uow/memdb"
+	"github.com/ymz-ncnk/idempo-go/integration_test/app"
+	"github.com/ymz-ncnk/idempo-go/integration_test/domain"
+	"github.com/ymz-ncnk/idempo-go/integration_test/dto"
+	infra "github.com/ymz-ncnk/idempo-go/integration_test/infrastructure/memdb"
+	uow "github.com/ymz-ncnk/idempo-go/uow/memdb"
 )
 
 // TestIdempotency demonstrates how to use the idempotency wrapper

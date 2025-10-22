@@ -6,14 +6,14 @@ import (
 	"fmt"
 
 	memdb "github.com/hashicorp/go-memdb"
-	"github.com/ymz-ncnk/idempotency-go"
+	"github.com/ymz-ncnk/idempo-go"
 )
 
 // MemDBIdempotencyTableName is the table name for idempotency records.
 const MemDBIdempotencyTableName = "idempotency_records"
 
 // NewIdempotencyStore returns a new MemDB idempotency store.
-func NewIdempotencyStore(tx *memdb.Txn) idempotency.Store {
+func NewIdempotencyStore(tx *memdb.Txn) idempo.Store {
 	return &IdempotencyStore{tx}
 }
 
@@ -24,20 +24,20 @@ type IdempotencyStore struct {
 
 // Get retrieves an IdempotencyRecord by key.
 func (s *IdempotencyStore) Get(ctx context.Context, id string) (
-	record idempotency.Record, err error,
+	record idempo.Record, err error,
 ) {
 	raw, err := s.tx.First(MemDBIdempotencyTableName, "id", id)
 	if err != nil {
-		err = fmt.Errorf(idempotency.ErrorPrefix+"memdb get error: %w", err)
+		err = fmt.Errorf(idempo.ErrorPrefix+"memdb get error: %w", err)
 		return
 	}
 	if raw == nil {
-		err = idempotency.ErrIdempotencyRecordNotFound
+		err = idempo.ErrIdempotencyRecordNotFound
 		return
 	}
-	record, ok := raw.(idempotency.Record)
+	record, ok := raw.(idempo.Record)
 	if !ok {
-		err = errors.New(idempotency.ErrorPrefix + "memdb internal error: stored value is not IdempotencyRecord")
+		err = errors.New(idempo.ErrorPrefix + "memdb internal error: stored value is not IdempotencyRecord")
 		return
 	}
 	return
@@ -45,10 +45,10 @@ func (s *IdempotencyStore) Get(ctx context.Context, id string) (
 
 // Save creates a new record.
 func (s *IdempotencyStore) Save(ctx context.Context,
-	record idempotency.Record,
+	record idempo.Record,
 ) (err error) {
 	if err := s.tx.Insert(MemDBIdempotencyTableName, record); err != nil {
-		return fmt.Errorf(idempotency.ErrorPrefix+"memdb insert error: %w", err)
+		return fmt.Errorf(idempo.ErrorPrefix+"memdb insert error: %w", err)
 	}
 	return
 }

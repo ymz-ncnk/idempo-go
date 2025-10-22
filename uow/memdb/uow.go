@@ -2,11 +2,11 @@ package memdb
 
 import (
 	memdb "github.com/hashicorp/go-memdb"
-	"github.com/ymz-ncnk/idempotency-go"
+	"github.com/ymz-ncnk/idempo-go"
 )
 
 // NewUnitOfWork is the constructor for the UnitOfWork.
-func NewUnitOfWork[T idempotency.UOWRepos](db *memdb.MemDB,
+func NewUnitOfWork[T idempo.UOWRepos](db *memdb.MemDB,
 	factory RepositoryBundleFactory[T],
 ) *UnitOfWork[T] {
 	return &UnitOfWork[T]{
@@ -17,7 +17,7 @@ func NewUnitOfWork[T idempotency.UOWRepos](db *memdb.MemDB,
 
 // UnitOfWork manages the transaction lifecycle for the MemDB.
 // It is generic over the Repository Bundle type (T).
-type UnitOfWork[T idempotency.UOWRepos] struct {
+type UnitOfWork[T idempo.UOWRepos] struct {
 	db *memdb.MemDB
 	// factory is the external function used to construct the bundle (T)
 	// for a specific transaction (tx).

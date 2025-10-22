@@ -1,4 +1,4 @@
-package idempotency
+package idempo
 
 // Hasher defines the interface for calculating a unique, deterministic string
 // signature for the Action input.
