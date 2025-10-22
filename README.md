@@ -58,6 +58,16 @@ same transfer twice. With `idempotency-go`, we wrap our application logic in an
 `Action` and let the library handle idempotency for us.
 
 ```go
+// Define the repositories available inside the UnitOfWork.
+type RepositoryBundle struct {
+  accountsRepo AccountsRepo 
+  store idempotency.Store 
+}
+
+func (r RepositoryBundle) IdempotencyStore() idempotency.Store { 
+  return r.store 
+}
+
 type TransferInput struct { 
   FromAccount string 
   ToAccount string 
@@ -69,18 +79,8 @@ func (in TransferInput) Hash() (string, error) {
   return fmt.Sprintf("%s:%s:%d", in.FromAccount, in.ToAccount, in.Amount), nil 
 }
 
-// Define the repositories available inside the UnitOfWork.
-type RepositoryBundle struct {
-  accountsRepo AccountsRepo 
-  store idempotency.Store 
-}
-
-func (r RepositoryBundle) IdempotencyStore() idempotency.Store { 
-  return r.store 
-}
-
 // Define the success output. 
-type TransferResult struct { 
+type TransferSuccess struct { 
   TransactionID string 
 }
 
@@ -93,34 +93,31 @@ type TransferFailure struct {
 Now we can set up the wrapper:
 
 ```go
-var (
-  // This function determines which Go errors should be persisted as a failure
-  // output (return 'true').
-  errorToFail = func(err error) (TransferFailure, bool) { 
-    if errors.Is(err, ErrInsufficientFunds) { 
-      return TransferFailure{Reason: err.Error()}, true 
-    }
-    // Other errors (like lost DB connection) will not be persisted.
-    return TransferFailure{}, false 
-  }
-
-  // Converts a stored failure output back into an error.
-  failToError =  func(f TransferFailure) error { return ErrInsufficientFunds }
-
-  unitOfWork = uow.NewMemDBUnitOfWork(db, factory) // Only in memory
+conf := idempo.Config[RepositoryBundle, dto.TransferSuccess, dto.TransferFailure]{
+  UnitOfWork: uow.NewMemDBUnitOfWork(db, factory), // Only in memory
   // implementation available at the moment. The factory ensures a new
   // repository bundle is created for each transaction.
 
-  // StoreAdapter is responsible for storing and retrieving both success and
-  // failure outputs. It uses serializers to persist them, and a converter to
-  // turn stored failures back into errors.
-  storeAdapter = idempotency.NewStoreAdapter(
-    serializer.JSONSerializer[TransferResult]{},
-    serializer.JSONSerializer[TransferFailure]{}, 
-    failToError,
-  )
-)
-wrapper := idempotency.NewWrapper(unitOfWork, storeAdapter, errorToFail)
+  SuccessSer: serializer.JSONSerializer[dto.TransferSuccess]{},
+  FailureSer: serializer.JSONSerializer[dto.TransferFailure]{},
+
+  // Converts a stored failure output back into an error.
+  FailToError: func(failure dto.TransferFailure) error {
+    return domain.ErrInsufficientFunds
+  },
+
+  // This function determines which Go errors should be persisted as a failure
+  // output (return 'true').
+  ErrorToFail: func(err error) (ok bool, output dto.TransferFailure) {
+    if errors.Is(err, domain.ErrInsufficientFunds) {
+      return true, dto.TransferFailure{Reason: err.Error()}
+    }
+    // All other errors (e.g., context.DeadlineExceeded, DB errors) are not
+    // stored (ok=false),
+    return
+  },
+}
+wrapper := idempo.NewWrapper[RepositoryBundle, dto.TransferInput](conf)
 ```
 
 And finally, wrap the Action:
