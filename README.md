@@ -68,6 +68,7 @@ func (r RepositoryBundle) IdempotencyStore() idempotency.Store {
   return r.store 
 }
 
+// Define the Action input.
 type TransferInput struct { 
   FromAccount string 
   ToAccount string 
@@ -124,7 +125,7 @@ And finally, wrap the Action:
 
 ```go
 transferAction := func(ctx context.Context, repos RepositoryBundle, 
-  input TransferInput) (TransferResult, error) { 
+  input TransferInput) (TransferSuccess, error) {
   ...
 }
 var (
