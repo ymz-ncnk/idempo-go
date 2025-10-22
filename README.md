@@ -103,13 +103,13 @@ conf := idempo.Config[RepositoryBundle, dto.TransferSuccess, dto.TransferFailure
   FailureSer: serializer.JSONSerializer[dto.TransferFailure]{},
 
   // Converts a stored failure output back into an error.
-  FailToError: func(failure dto.TransferFailure) error {
+  FailureToError: func(failure dto.TransferFailure) error {
     return domain.ErrInsufficientFunds
   },
 
   // This function determines which Go errors should be persisted as a failure
   // output (return 'true').
-  ErrorToFail: func(err error) (ok bool, output dto.TransferFailure) {
+  ErrorToFailure: func(err error) (ok bool, failure dto.TransferFailure) {
     if errors.Is(err, domain.ErrInsufficientFunds) {
       return true, dto.TransferFailure{Reason: err.Error()}
     }

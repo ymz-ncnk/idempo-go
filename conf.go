@@ -10,9 +10,9 @@ type Config[T UOWRepos, S, F any] struct {
 	SuccessSer Serializer[S]
 	// FailureSer serializes failure results (F) for storage.
 	FailureSer Serializer[F]
-	// ErrorToFail maps a runtime error to a storable failure (F).
+	// ErrorToFailure maps a runtime error to a storable failure (F).
 	// Returns ok=false if the error should not be persisted.
-	ErrorToFail func(err error) (ok bool, failure F)
-	// FailToError converts a stored failure (F) back into a Go error.
-	FailToError func(failure F) error
+	ErrorToFailure func(err error) (ok bool, failure F)
+	// FailureToError converts a stored failure (F) back into a Go error.
+	FailureToError func(failure F) error
 }

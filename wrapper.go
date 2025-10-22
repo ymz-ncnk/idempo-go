@@ -5,17 +5,17 @@ import (
 	"fmt"
 )
 
-// ErrorToFail defines the function that converts a Go 'error' into the
+// ErrorToFailure defines the function that converts a Go 'error' into the
 // storable failure output ('F').
-type ErrorToFail[F any] func(err error) (bool, F)
+type ErrorToFailure[F any] func(err error) (bool, F)
 
 // NewWrapper creates a new instance of the Wrapper.
 func NewWrapper[T UOWRepos, I Hasher, S, F any](
 	conf Config[T, S, F],
 ) Wrapper[T, I, S, F] {
 	storeAdapter := NewStoreAdapter(conf.SuccessSer, conf.FailureSer,
-		conf.FailToError)
-	return Wrapper[T, I, S, F]{conf.UnitOfWork, storeAdapter, conf.ErrorToFail}
+		conf.FailureToError)
+	return Wrapper[T, I, S, F]{conf.UnitOfWork, storeAdapter, conf.ErrorToFailure}
 }
 
 // Wrapper is the core type that enforces idempotency for a protected Action.
@@ -30,9 +30,9 @@ func NewWrapper[T UOWRepos, I Hasher, S, F any](
 // S is the type of the successful output.
 // F is the type of the failure output.
 type Wrapper[T UOWRepos, I Hasher, S, F any] struct {
-	unitOfWork   UnitOfWork[T]
-	storeAdapter StoreAdapter[S, F]
-	errorToFail  ErrorToFail[F]
+	unitOfWork     UnitOfWork[T]
+	storeAdapter   StoreAdapter[S, F]
+	errorToFailure ErrorToFailure[F]
 }
 
 // Wrap executes the provided Action idempotently.
@@ -44,8 +44,8 @@ type Wrapper[T UOWRepos, I Hasher, S, F any] struct {
 //     stored result.
 //     b. If no record is found, executes the core Action.
 //     c. If the Action succeeds, saves the success output.
-//     d. If the Action fails, with errorToFail it tries to get and persist a
-//     failure output.
+//     d. If the Action fails, with errorToFailure it tries to get and persist
+//     a failure output.
 //  3. The UOW ensures the Action's side effects and the idempotency record
 //     persistence are completed together or roll back completely.
 func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
@@ -69,7 +69,7 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 		successOutput, fnErr = action(ctx, repos, idempotencyKey, input)
 		if fnErr != nil {
 			// Handle Failure: Business or System Error
-			isBusinessError, failOutput := w.errorToFail(fnErr)
+			isBusinessError, failOutput := w.errorToFailure(fnErr)
 			if isBusinessError {
 				// Business logic failure (e.g., OCC failed, Stock unavailable). Save
 				// the fail record.

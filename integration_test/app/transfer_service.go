@@ -18,10 +18,10 @@ func NewTransferService(unitOfWork idempo.UnitOfWork[RepositoryBundle]) Transfer
 		UnitOfWork: unitOfWork,
 		SuccessSer: serializer.JSONSerializer[dto.TransferSuccess]{},
 		FailureSer: serializer.JSONSerializer[dto.TransferFailure]{},
-		FailToError: func(failure dto.TransferFailure) error {
+		FailureToError: func(failure dto.TransferFailure) error {
 			return domain.ErrInsufficientFunds
 		},
-		ErrorToFail: func(err error) (ok bool, output dto.TransferFailure) {
+		ErrorToFailure: func(err error) (ok bool, failure dto.TransferFailure) {
 			if errors.Is(err, domain.ErrInsufficientFunds) {
 				return true, dto.TransferFailure{Reason: err.Error()}
 			}
