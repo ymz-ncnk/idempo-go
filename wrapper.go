@@ -7,19 +7,15 @@ import (
 
 // ErrorToFail defines the function that converts a Go 'error' into the
 // storable failure output ('F').
-type ErrorToFail[F any] func(err error) (F, bool)
+type ErrorToFail[F any] func(err error) (bool, F)
 
-// NewWrapper creates a new instance of the execution Wrapper.
-//
-// It configures the Wrapper with the necessary components: the UnitOfWork
-// for transactional data access, the StoreAdapter for handling persistence
-// details, and the error mapping function to correctly categorize execution
-// failures.
-func NewWrapper[T UOWRepos, I Hasher, S, F any](unitOfWork UnitOfWork[T],
-	storeAdapter StoreAdapter[S, F],
-	errorToFail ErrorToFail[F],
+// NewWrapper creates a new instance of the Wrapper.
+func NewWrapper[T UOWRepos, I Hasher, S, F any](
+	conf Config[T, S, F],
 ) Wrapper[T, I, S, F] {
-	return Wrapper[T, I, S, F]{unitOfWork, storeAdapter, errorToFail}
+	storeAdapter := NewStoreAdapter(conf.SuccessSer, conf.FailureSer,
+		conf.FailToError)
+	return Wrapper[T, I, S, F]{conf.UnitOfWork, storeAdapter, conf.ErrorToFail}
 }
 
 // Wrapper is the core type that enforces idempotency for a protected Action.
@@ -73,7 +69,7 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 		successOutput, fnErr = action(ctx, repos, idempotencyKey, input)
 		if fnErr != nil {
 			// Handle Failure: Business or System Error
-			failOutput, isBusinessError := w.errorToFail(fnErr)
+			isBusinessError, failOutput := w.errorToFail(fnErr)
 			if isBusinessError {
 				// Business logic failure (e.g., OCC failed, Stock unavailable). Save
 				// the fail record.

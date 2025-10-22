@@ -13,9 +13,25 @@ import (
 
 // NewTransferService constructs a TransferService that executes
 // transfers atomically and idempotently using the provided UnitOfWork.
-func NewTransferService(unitOfWork UnitOfWork) TransferService {
+func NewTransferService(unitOfWork idempo.UnitOfWork[RepositoryBundle]) TransferService {
+	conf := idempo.Config[RepositoryBundle, dto.TransferSuccess, dto.TransferFailure]{
+		UnitOfWork: unitOfWork,
+		SuccessSer: serializer.JSONSerializer[dto.TransferSuccess]{},
+		FailureSer: serializer.JSONSerializer[dto.TransferFailure]{},
+		FailToError: func(failure dto.TransferFailure) error {
+			return domain.ErrInsufficientFunds
+		},
+		ErrorToFail: func(err error) (ok bool, output dto.TransferFailure) {
+			if errors.Is(err, domain.ErrInsufficientFunds) {
+				return true, dto.TransferFailure{Reason: err.Error()}
+			}
+			// All other errors (e.g., context.DeadlineExceeded, DB errors) are not
+			// stored (ok=false),
+			return
+		},
+	}
 	return TransferService{
-		makeTransferWrapper(unitOfWork),
+		wrapper: idempo.NewWrapper[RepositoryBundle, dto.TransferInput](conf),
 	}
 }
 
@@ -24,7 +40,7 @@ func NewTransferService(unitOfWork UnitOfWork) TransferService {
 // return the same result without reapplying side effects.
 type TransferService struct {
 	wrapper idempo.Wrapper[RepositoryBundle, dto.TransferInput,
-		dto.TransferResult, dto.TransferFailure]
+		dto.TransferSuccess, dto.TransferFailure]
 }
 
 // Transfer executes a money transfer wrapped in idempotency handling.
@@ -32,7 +48,7 @@ type TransferService struct {
 // result (success or failure) is returned instead of re-executing.
 func (s TransferService) Transfer(ctx context.Context, idempotencyKey string,
 	input dto.TransferInput,
-) (result dto.TransferResult, err error) {
+) (result dto.TransferSuccess, err error) {
 	return s.wrapper.Wrap(ctx, idempotencyKey, input, s.doTransfer)
 }
 
@@ -41,7 +57,7 @@ func (s TransferService) doTransfer(ctx context.Context,
 	repos RepositoryBundle,
 	idempotencyKey string,
 	input dto.TransferInput,
-) (result dto.TransferResult, err error) {
+) (result dto.TransferSuccess, err error) {
 	from, err := repos.AccountRepo.Get(input.FromAccount)
 	if err != nil {
 		return
@@ -62,40 +78,8 @@ func (s TransferService) doTransfer(ctx context.Context,
 	if err != nil {
 		return
 	}
-	result = dto.TransferResult{
+	result = dto.TransferSuccess{
 		TransactionID: uuid.New().String(),
 	}
 	return
-}
-
-// makeTransferWrapper creates an idempo.Wrapper specifically configured
-// for the fund transfer business logic.
-func makeTransferWrapper(
-	unitOfWork UnitOfWork,
-) idempo.Wrapper[RepositoryBundle, dto.TransferInput, dto.TransferResult, dto.TransferFailure] {
-	var (
-		// failToError converts the stored failure output (TransferFailure) back
-		// into a Go error (ErrInsufficientFunds) for the client on subsequent
-		// retries.
-		failToError = func(failureOutput dto.TransferFailure) error {
-			return domain.ErrInsufficientFunds
-		}
-		// errorToFail determines which error should be saved as an idempotent
-		// failure output.
-		errorToFail = func(err error) (output dto.TransferFailure, ok bool) {
-			if errors.Is(err, domain.ErrInsufficientFunds) {
-				return dto.TransferFailure{Reason: err.Error()}, true
-			}
-			// All other errors (e.g., context.DeadlineExceeded, DB errors) are not
-			// stored (ok=false),
-			return
-		}
-		storeAdapter = idempo.NewStoreAdapter(
-			serializer.JSONSerializer[dto.TransferResult]{},
-			serializer.JSONSerializer[dto.TransferFailure]{},
-			failToError,
-		)
-	)
-	return idempo.NewWrapper[RepositoryBundle, dto.TransferInput](
-		unitOfWork, storeAdapter, errorToFail)
 }

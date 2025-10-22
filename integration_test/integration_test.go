@@ -10,7 +10,7 @@ import (
 	"github.com/ymz-ncnk/idempo-go/integration_test/app"
 	"github.com/ymz-ncnk/idempo-go/integration_test/domain"
 	"github.com/ymz-ncnk/idempo-go/integration_test/dto"
-	infra "github.com/ymz-ncnk/idempo-go/integration_test/infrastructure/memdb"
+	infra "github.com/ymz-ncnk/idempo-go/integration_test/infra/memdb"
 	uow "github.com/ymz-ncnk/idempo-go/uow/memdb"
 )
 

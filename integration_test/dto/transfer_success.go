@@ -1,5 +1,5 @@
 package dto
 
-type TransferResult struct {
+type TransferSuccess struct {
 	TransactionID string
 }
