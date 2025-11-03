@@ -11,7 +11,7 @@ the same request is executed multiple times due to retries, network issues, or
 client errors. Without safeguards, this can cause duplicate side effects such
 as double charges, duplicated records, or inconsistent state.
 
-`idempotency-go` provides a **wrapper** around application operations that
+`idempo-go` provides a **wrapper** around application operations that
 guarantees:
 
 - Repeated requests with the same input always produce the same result.
@@ -23,7 +23,7 @@ and is **not ready for production use**.
 
 ## Action, Input, and Outputs
 
-At the heart of `idempotency-go` is the [Action](https://github.com/ymz-ncnk/idempotency-go/blob/main/action.go)
+At the heart of `idempo-go` is the [Action](https://github.com/ymz-ncnk/idempo-go/blob/main/action.go)
 — your application logic function.
 
 ```go
@@ -54,7 +54,7 @@ rolled back.
 ## Example
 
 Let’s say we want to build a money transfer API that should not execute the
-same transfer twice. With `idempotency-go`, we wrap our application logic in an
+same transfer twice. With `idempo-go`, we wrap our application logic in an
 `Action` and let the library handle idempotency for us.
 
 ```go
@@ -146,4 +146,4 @@ result, err := wrapper.Wrap(ctx, idempotencyKey, input, transferAction)
   mismatch error.
 
 A complete, working example illustrating the full component setup can be found
-in the [integration_test package](https://github.com/ymz-ncnk/idempotency-go/tree/main/integration_test).
+in the [integration_test package](https://github.com/ymz-ncnk/idempo-go/tree/main/integration_test).
