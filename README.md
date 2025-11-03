@@ -1,4 +1,4 @@
-# idempotency-go
+# idempo-go
 
 A Go library for **atomic, transactional idempotency** — ensuring safe retries in
 distributed systems.
