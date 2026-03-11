@@ -10,12 +10,11 @@ import (
 type ErrorToFailure[F any] func(err error) (bool, F)
 
 // NewWrapper creates a new instance of the Wrapper.
-func NewWrapper[T UOWRepos, I Hasher, S, F any](
+func NewWrapper[T UOWRepos, I Hasher, S any, F Failure](
 	conf Config[T, S, F],
 ) Wrapper[T, I, S, F] {
-	storeAdapter := NewStoreAdapter(conf.SuccessSer, conf.FailureSer,
-		conf.FailureToError)
-	return Wrapper[T, I, S, F]{conf.UnitOfWork, storeAdapter, conf.ErrorToFailure}
+	storeAdapter := NewStoreAdapter[S, F](conf.SuccessSer, conf.FailureSer)
+	return Wrapper[T, I, S, F]{conf.UnitOfWork, storeAdapter}
 }
 
 // Wrapper is the core type that enforces idempotency for a protected Action.
@@ -29,10 +28,9 @@ func NewWrapper[T UOWRepos, I Hasher, S, F any](
 // I is the Action input type, which must implement the Hasher interface.
 // S is the type of the successful output.
 // F is the type of the failure output.
-type Wrapper[T UOWRepos, I Hasher, S, F any] struct {
-	unitOfWork     UnitOfWork[T]
-	storeAdapter   StoreAdapter[S, F]
-	errorToFailure ErrorToFailure[F]
+type Wrapper[T UOWRepos, I Hasher, S any, F Failure] struct {
+	unitOfWork   UnitOfWork[T]
+	storeAdapter StoreAdapter[S, F]
 }
 
 // Wrap executes the provided Action idempotently.
@@ -44,8 +42,8 @@ type Wrapper[T UOWRepos, I Hasher, S, F any] struct {
 //     stored result.
 //     b. If no record is found, executes the core Action.
 //     c. If the Action succeeds, saves the success output.
-//     d. If the Action fails, with errorToFailure it tries to get and persist
-//     a failure output.
+//     d. If the Action fails, it checks if the error is a domain failure (F).
+//     If so, it persists it.
 //  3. The UOW ensures the Action's side effects and the idempotency record
 //     persistence are completed together or roll back completely.
 func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
@@ -69,10 +67,10 @@ func (w Wrapper[T, I, S, F]) Wrap(ctx context.Context, idempotencyKey string,
 		successOutput, fnErr = action(ctx, repos, idempotencyKey, input)
 		if fnErr != nil {
 			// Handle Failure: Business or System Error
-			isBusinessError, failOutput := w.errorToFailure(fnErr)
-			if isBusinessError {
-				// Business logic failure (e.g., OCC failed, Stock unavailable). Save
-				// the fail record.
+			// Direct type assertion to the failure generic type (F).
+			// F constraint implies the intent to be persisted.
+			if failOutput, ok := fnErr.(F); ok {
+				// Business logic failure. Save the fail record.
 				if storeErr := w.storeAdapter.SaveFailOutput(ctx, idempotencyKey, hash,
 					failOutput, repos.IdempotencyStore()); storeErr != nil {
 					fnErr = NewFailureOutputStoreError(storeErr, fnErr)

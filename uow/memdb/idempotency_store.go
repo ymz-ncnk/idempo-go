@@ -37,7 +37,8 @@ func (s *IdempotencyStore) Get(ctx context.Context, id string) (
 	}
 	record, ok := raw.(idempo.Record)
 	if !ok {
-		err = errors.New(idempo.ErrorPrefix + "memdb internal error: stored value is not IdempotencyRecord")
+		err = errors.New(idempo.ErrorPrefix +
+			"memdb internal error: stored value is not IdempotencyRecord")
 		return
 	}
 	return

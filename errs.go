@@ -6,7 +6,7 @@ import (
 )
 
 // ErrorPrefix is a common prefix for all idempotency errors.
-const ErrorPrefix = "idempotency error: "
+const ErrorPrefix = "idempo error: "
 
 var (
 	// ErrIdempotencyRecordNotFound is returned when the idempotency record is not
@@ -122,4 +122,14 @@ func (e *FailureOutputStoreError) Error() string {
 
 func (e *FailureOutputStoreError) Unwrap() error {
 	return e.storeErr
+}
+
+// Failure is a structural interface used by the Wrapper to identify
+// errors that should be persisted as business failures.
+//
+// To use it, a domain error should implement a method:
+// IdempotentFailure()
+type Failure interface {
+	error
+	IdempotentFailure()
 }

@@ -2,33 +2,19 @@ package app
 
 import (
 	"context"
-	"errors"
 
 	"github.com/google/uuid"
 	"github.com/ymz-ncnk/idempo-go"
-	"github.com/ymz-ncnk/idempo-go/integration_test/domain"
-	"github.com/ymz-ncnk/idempo-go/integration_test/dto"
 	serializer "github.com/ymz-ncnk/idempo-go/serializer/json"
+	"github.com/ymz-ncnk/idempo-go/test/integration/domain"
+	"github.com/ymz-ncnk/idempo-go/test/integration/dto"
 )
 
-// NewTransferService constructs a TransferService that executes
-// transfers atomically and idempotently using the provided UnitOfWork.
 func NewTransferService(unitOfWork idempo.UnitOfWork[RepositoryBundle]) TransferService {
 	conf := idempo.Config[RepositoryBundle, dto.TransferSuccess, dto.TransferFailure]{
 		UnitOfWork: unitOfWork,
 		SuccessSer: serializer.JSONSerializer[dto.TransferSuccess]{},
 		FailureSer: serializer.JSONSerializer[dto.TransferFailure]{},
-		FailureToError: func(failure dto.TransferFailure) error {
-			return domain.ErrInsufficientFunds
-		},
-		ErrorToFailure: func(err error) (ok bool, failure dto.TransferFailure) {
-			if errors.Is(err, domain.ErrInsufficientFunds) {
-				return true, dto.TransferFailure{Reason: err.Error()}
-			}
-			// All other errors (e.g., context.DeadlineExceeded, DB errors) are not
-			// stored (ok=false),
-			return
-		},
 	}
 	return TransferService{
 		wrapper: idempo.NewWrapper[RepositoryBundle, dto.TransferInput](conf),
@@ -68,7 +54,8 @@ func (s TransferService) doTransfer(ctx context.Context,
 	}
 	err = domain.Transfer(&from, &to, input.Amount)
 	if err != nil {
-		return
+		// Convert to our idempotent DTO error
+		return dto.TransferSuccess{}, dto.TransferFailure{Reason: err.Error()}
 	}
 	err = repos.AccountRepo.Update(from)
 	if err != nil {

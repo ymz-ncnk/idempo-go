@@ -1,16 +1,16 @@
-package intest
+package integration
 
 import (
-	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-memdb"
 	assertfatal "github.com/ymz-ncnk/assert/fatal"
-	"github.com/ymz-ncnk/idempo-go/integration_test/app"
-	"github.com/ymz-ncnk/idempo-go/integration_test/domain"
-	"github.com/ymz-ncnk/idempo-go/integration_test/dto"
-	infra "github.com/ymz-ncnk/idempo-go/integration_test/infra/memdb"
+	"github.com/ymz-ncnk/idempo-go/test/integration/app"
+	"github.com/ymz-ncnk/idempo-go/test/integration/domain"
+	"github.com/ymz-ncnk/idempo-go/test/integration/dto"
+	infra "github.com/ymz-ncnk/idempo-go/test/integration/infra/memdb"
 	uow "github.com/ymz-ncnk/idempo-go/uow/memdb"
 )
 
@@ -26,10 +26,11 @@ func TestIdempotency(t *testing.T) {
 	}
 	// Fills the DB with initial account balances for the test scenario.
 	fillDB(db)
-	service := makeService(db)
 	var (
+		service        = makeService(db)
 		idempotencyKey = "transfer-123"
-		input          = dto.TransferInput{
+
+		input = dto.TransferInput{
 			FromAccount: "A",
 			ToAccount:   "B",
 			Amount:      500,
@@ -38,7 +39,7 @@ func TestIdempotency(t *testing.T) {
 
 	// First execution succeeds: money moves from A → B.
 	t.Run("Should complete transfer successfully", func(t *testing.T) {
-		result, err := service.Transfer(context.TODO(), idempotencyKey, input)
+		result, err := service.Transfer(t.Context(), idempotencyKey, input)
 		assertfatal.EqualError(err, nil, t)
 		assertfatal.Equal(isUUID(result.TransactionID), true, t)
 
@@ -50,7 +51,7 @@ func TestIdempotency(t *testing.T) {
 	// returns the cached result without running the action again.
 	t.Run("Should return cached result when successfully rerunning same transfer",
 		func(t *testing.T) {
-			result, err := service.Transfer(context.TODO(), idempotencyKey, input)
+			result, err := service.Transfer(t.Context(), idempotencyKey, input)
 			assertfatal.EqualError(err, nil, t)
 			assertfatal.Equal(isUUID(result.TransactionID), true, t)
 
@@ -67,8 +68,10 @@ func TestIdempotency(t *testing.T) {
 	}
 	t.Run("Should fail with insufficient funds error and prevent state change",
 		func(t *testing.T) {
-			result, err := service.Transfer(context.TODO(), idempotencyKey, input)
-			assertfatal.EqualError(err, domain.ErrInsufficientFunds, t)
+			result, err := service.Transfer(t.Context(), idempotencyKey, input)
+			var fail dto.TransferFailure
+			assertfatal.Equal(errors.As(err, &fail), true, t)
+			assertfatal.Equal(fail.Reason, domain.ErrInsufficientFunds.Error(), t)
 			assertfatal.Equal(result.TransactionID, "", t)
 
 			assertfatal.Equal(getAccount(db, input.FromAccount).Balance, 500, t)
@@ -85,7 +88,7 @@ func TestIdempotency(t *testing.T) {
 				Amount:      500,
 			}
 		)
-		result, err := service.Transfer(context.TODO(), idempotencyKey, input)
+		result, err := service.Transfer(t.Context(), idempotencyKey, input)
 		assertfatal.EqualError(err, nil, t)
 		assertfatal.Equal(isUUID(result.TransactionID), true, t)
 
@@ -97,8 +100,10 @@ func TestIdempotency(t *testing.T) {
 	// executing the action again.
 	t.Run("Should return cached error when rerunning failed transfer",
 		func(t *testing.T) {
-			result, err := service.Transfer(context.TODO(), idempotencyKey, input)
-			assertfatal.EqualError(err, domain.ErrInsufficientFunds, t)
+			result, err := service.Transfer(t.Context(), idempotencyKey, input)
+			var fail dto.TransferFailure
+			assertfatal.Equal(errors.As(err, &fail), true, t)
+			assertfatal.Equal(fail.Reason, domain.ErrInsufficientFunds.Error(), t)
 			assertfatal.Equal(result.TransactionID, "", t)
 
 			assertfatal.Equal(getAccount(db, input.FromAccount).Balance, 1000, t)

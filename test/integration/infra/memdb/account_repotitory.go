@@ -2,7 +2,7 @@ package memdb
 
 import (
 	"github.com/hashicorp/go-memdb"
-	"github.com/ymz-ncnk/idempo-go/integration_test/domain"
+	"github.com/ymz-ncnk/idempo-go/test/integration/domain"
 )
 
 // NewAccountRepository creates a new AccountRepository backed by the given

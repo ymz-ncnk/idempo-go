@@ -27,7 +27,8 @@ At the heart of `idempo-go` is the [Action](https://github.com/ymz-ncnk/idempo-g
 — your application logic function.
 
 ```go
-type Action[T, I, S any] func(ctx context.Context, repos T, input I) (S, error)
+type Action[T, I, S any] func(ctx context.Context, repos T, 
+  idempotencyKey string, input I) (S, error)
 ```
 
 - Repositories (T): A bundle of data-access dependencies, provided by the
@@ -61,10 +62,10 @@ same transfer twice. With `idempo-go`, we wrap our application logic in an
 // Define the repositories available inside the UnitOfWork.
 type RepositoryBundle struct {
   accountsRepo AccountsRepo 
-  store idempotency.Store 
+  store idempo.Store 
 }
 
-func (r RepositoryBundle) IdempotencyStore() idempotency.Store { 
+func (r RepositoryBundle) IdempotencyStore() idempo.Store { 
   return r.store 
 }
 
@@ -89,6 +90,12 @@ type TransferSuccess struct {
 type TransferFailure struct { 
   Reason string 
 }
+
+func (e TransferFailure) Error() string {
+  return e.Reason
+}
+
+func (e TransferFailure) IdempotentFailure() {}
 ```
 
 Now we can set up the wrapper:
@@ -101,22 +108,6 @@ conf := idempo.Config[RepositoryBundle, dto.TransferSuccess, dto.TransferFailure
 
   SuccessSer: serializer.JSONSerializer[dto.TransferSuccess]{},
   FailureSer: serializer.JSONSerializer[dto.TransferFailure]{},
-
-  // Converts a stored failure output back into an error.
-  FailureToError: func(failure dto.TransferFailure) error {
-    return domain.ErrInsufficientFunds
-  },
-
-  // This function determines which Go errors should be persisted as a failure
-  // output (return 'true').
-  ErrorToFailure: func(err error) (ok bool, failure dto.TransferFailure) {
-    if errors.Is(err, domain.ErrInsufficientFunds) {
-      return true, dto.TransferFailure{Reason: err.Error()}
-    }
-    // All other errors (e.g., context.DeadlineExceeded, DB errors) are not
-    // stored (ok=false),
-    return
-  },
 }
 wrapper := idempo.NewWrapper[RepositoryBundle, dto.TransferInput](conf)
 ```
@@ -125,7 +116,7 @@ And finally, wrap the Action:
 
 ```go
 transferAction := func(ctx context.Context, repos RepositoryBundle, 
-  input TransferInput) (TransferSuccess, error) {
+  idempotencyKey string, input TransferInput) (TransferSuccess, error) {
   ...
 }
 var (
@@ -146,4 +137,4 @@ result, err := wrapper.Wrap(ctx, idempotencyKey, input, transferAction)
   mismatch error.
 
 A complete, working example illustrating the full component setup can be found
-in the [integration_test package](https://github.com/ymz-ncnk/idempo-go/tree/main/integration_test).
+in the [integration package](https://github.com/ymz-ncnk/idempo-go/tree/main/test/integration).

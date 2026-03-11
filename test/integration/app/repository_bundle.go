@@ -3,7 +3,7 @@ package app
 import (
 	"github.com/ymz-ncnk/idempo-go"
 
-	"github.com/ymz-ncnk/idempo-go/integration_test/domain"
+	"github.com/ymz-ncnk/idempo-go/test/integration/domain"
 )
 
 // NewRepositoryBundle creates a RepositoryBundle containing the

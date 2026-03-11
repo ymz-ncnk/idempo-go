@@ -4,22 +4,13 @@ import (
 	"context"
 )
 
-// FailToError defines the function that converts a stored failure output ('F')
-// back into a Go 'error' object.
-// Used by the StoreAdapter during AlreadyProcessed to recreate the original
-// error.
-type FailToError[F any] func(faildOutput F) error
-
 // NewStoreAdapter creates a new instance of the StoreAdapter, initializing it
-// with the necessary serializers and the function required to reconstruct a
-// stored failure object back into an active Go error.
-func NewStoreAdapter[S, F any](successSer Serializer[S], failureSer Serializer[F],
-	failureToError FailToError[F],
+// with the necessary serializers.
+func NewStoreAdapter[S any, F Failure](successSer Serializer[S], failureSer Serializer[F],
 ) StoreAdapter[S, F] {
 	return storeAdapter[S, F]{
-		successSer:     successSer,
-		failureSer:     failureSer,
-		failureToError: failureToError,
+		successSer: successSer,
+		failureSer: failureSer,
 	}
 }
 
@@ -27,7 +18,7 @@ func NewStoreAdapter[S, F any](successSer Serializer[S], failureSer Serializer[F
 // store (Store). It handles the serialization and deserialization of the
 // operation's success output (S) and failure output (F), and converts stored
 // failure data back into an application error.
-type StoreAdapter[S, F any] interface {
+type StoreAdapter[S any, F Failure] interface {
 	// AlreadyProcessed checks the Store for a record associated with the given
 	// idempotency key.
 	//
@@ -35,7 +26,7 @@ type StoreAdapter[S, F any] interface {
 	//  1. It reconstructs the original result (either successOutput or an error).
 	//  2. If the record is a success, it deserializes and returns the successOutput.
 	//  3. If the record is a failure, it deserializes the failure output (F) and
-	//     uses the internal failureToError function to return the original error.
+	//     returns it directly as an error.
 	//
 	// Returns (false, nil, nil) if no record is found.
 	AlreadyProcessed(ctx context.Context, idempotencyKey string, inputHash string,
@@ -50,10 +41,9 @@ type StoreAdapter[S, F any] interface {
 		failureOutput F, store Store) (err error)
 }
 
-type storeAdapter[S, F any] struct {
-	successSer     Serializer[S]
-	failureSer     Serializer[F]
-	failureToError func(faildOutput F) error
+type storeAdapter[S any, F Failure] struct {
+	successSer Serializer[S]
+	failureSer Serializer[F]
 }
 
 func (a storeAdapter[S, F]) AlreadyProcessed(ctx context.Context,
@@ -85,7 +75,7 @@ func (a storeAdapter[S, F]) AlreadyProcessed(ctx context.Context,
 		err = NewFailureOutputUnmarshalError(err)
 		return
 	}
-	err = a.failureToError(failOutput)
+	err = failOutput
 	return
 }
 
@@ -115,7 +105,6 @@ func (a storeAdapter[S, F]) SaveFailOutput(ctx context.Context,
 ) (err error) {
 	output, err := a.failureSer.Marshal(failOutput)
 	if err != nil {
-		// TODO
 		err = NewFailureOutputMarshalError(err)
 		return
 	}
