@@ -41,8 +41,7 @@ type Action[T, I, S any] func(ctx context.Context, repos T,
 - Success Output (S): The normal result your `Action` produces when everything
   goes well.
 - Failure Output: A structured form of a business failure (e.g., “insufficient
-  funds” or “stock unavailable”). This is not returned directly. Instead, it’s
-  mapped to an error so callers only ever see success or error.
+  funds” or “stock unavailable”), which is also an error.
 
 After the `Action` is executed, its result (whether success or failure) is
 persisted in the idempotency store. On future retries with the same input, the
